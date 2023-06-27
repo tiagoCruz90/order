@@ -9,6 +9,7 @@ import com.tutorial.order.service.OrderService;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,10 +36,27 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<OrderRequestDTO> getAllOrders() {
-        List<OrderRequestDTO> orderList = orderRepository.findAll();
+        List<Order> orderList = orderRepository.findAll();
 
-        return orderList;
+        return orderList.stream()
+                .map(this::mapToOrderRequestDTO)
+                .toList();
     }
+
+    @Override
+    public void updateOrder(Long Id, OrderRequestDTO orderRequestDTO) {
+        Order order = orderRepository.findById(Id).orElseThrow();
+        order.setOrderNumber(UUID.randomUUID().toString());
+
+        List<OrderLineItems> orderLineItemsList = orderRequestDTO.getOrderLineItemsDTOList()
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
+
+        order.setOrderLineItemsList(orderLineItemsList);
+        orderRepository.save(order);
+    }
+
 
     private OrderLineItems mapToDTO(OrderLineItemsDTO orderLineItemsDTO) {
         OrderLineItems orderLineItems = new OrderLineItems();
@@ -48,14 +66,24 @@ public class OrderServiceImpl implements OrderService {
         return orderLineItems;
     }
 
-    //Do a mapping from Order to OrderRequestDTO
-    private OrderRequestDTO mapToDTO2(Order order) {
+    private OrderRequestDTO mapToOrderRequestDTO(Order order) {
         OrderRequestDTO orderRequestDTO = new OrderRequestDTO();
-        orderRequestDTO.setOrderNumber(order.getOrderNumber());
-        orderRequestDTO.setOrderLineItemsDTOList(order.getOrderLineItemsList()
+
+        List<OrderLineItemsDTO> orderLineItemsDTOList = order.getOrderLineItemsList()
                 .stream()
-                .map(this::mapToDTO)
-                .toList());
+                .map(this::mapToOrderLineItemsDTO)
+                .collect(Collectors.toList());
+
+        orderRequestDTO.setOrderLineItemsDTOList(orderLineItemsDTOList);
         return orderRequestDTO;
+    }
+
+    private OrderLineItemsDTO mapToOrderLineItemsDTO(OrderLineItems orderLineItems) {
+        OrderLineItemsDTO orderLineItemsDTO = new OrderLineItemsDTO();
+        orderLineItemsDTO.setId(orderLineItems.getId());
+        orderLineItemsDTO.setSkuCode(orderLineItems.getSkuCode());
+        orderLineItemsDTO.setQuantity(orderLineItems.getQuantity());
+        orderLineItemsDTO.setPrice(orderLineItems.getPrice());
+        return orderLineItemsDTO;
     }
 }

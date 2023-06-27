@@ -27,4 +27,11 @@ public class OrderController {
     public List<OrderRequestDTO> getAllOrders(){
       return orderService.getAllOrders();
     }
+
+    @PutMapping("/{Id}")
+    @ResponseStatus(HttpStatus.OK)
+    public String updateOrder(@PathVariable Long Id, @RequestBody OrderRequestDTO orderRequestDTO){
+      orderService.updateOrder(Id, orderRequestDTO);
+      return "Order updated successfully";
+    }
 }
